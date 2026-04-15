@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p docs .claude/commands)",
+      "Bash(git mv:*)",
+      "Bash(npx tsc *)"
+    ]
+  }
+}
