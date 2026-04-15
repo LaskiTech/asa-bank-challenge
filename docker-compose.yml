@@ -1,0 +1,25 @@
+services:
+  api:
+    build:
+      context: .
+      target: development          # switch to "production" for prod builds
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist SQLite database between container restarts.
+      # The SqliteTransactionStore constructor auto-creates this directory.
+      - ./data:/app/data
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      SHARED_SECRET: ${SHARED_SECRET:-dev-secret-key-change-in-production}
+      TIMESTAMP_MAX_AGE_SEC: ${TIMESTAMP_MAX_AGE_SEC:-300}
+      DATABASE_PATH: /app/data/transactions.db
+      EXTERNAL_API_URL: ${EXTERNAL_API_URL:-http://localhost:4000}
+      EXTERNAL_API_TIMEOUT_MS: ${EXTERNAL_API_TIMEOUT_MS:-5000}
+      RETRY_MAX_ATTEMPTS: ${RETRY_MAX_ATTEMPTS:-3}
+      RETRY_BASE_DELAY_MS: ${RETRY_BASE_DELAY_MS:-1000}
+      CIRCUIT_BREAKER_THRESHOLD: ${CIRCUIT_BREAKER_THRESHOLD:-5}
+      CIRCUIT_BREAKER_TIMEOUT_MS: ${CIRCUIT_BREAKER_TIMEOUT_MS:-30000}
+      BULKHEAD_MAX_CONCURRENT: ${BULKHEAD_MAX_CONCURRENT:-10}
+    restart: unless-stopped

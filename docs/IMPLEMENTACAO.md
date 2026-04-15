@@ -113,22 +113,26 @@ export interface AppError extends Error {
 ```typescript
 export const config = {
   // Server
-  PORT: parseInt(process.env.PORT || '3000'),
-  NODE_ENV: process.env.NODE_ENV || 'development',
-  
+  PORT: parseInt(process.env['PORT'] ?? '3000'),
+  NODE_ENV: process.env['NODE_ENV'] ?? 'development',
+
   // Security
-  SHARED_SECRET: process.env.SHARED_SECRET || 'dev-secret-key',
-  TIMESTAMP_MAX_AGE_SEC: parseInt(process.env.TIMESTAMP_MAX_AGE_SEC || '300'),
-  
-  // Resilience
-  EXTERNAL_API_TIMEOUT_MS: parseInt(process.env.EXTERNAL_API_TIMEOUT_MS || '5000'),
-  RETRY_MAX_ATTEMPTS: parseInt(process.env.RETRY_MAX_ATTEMPTS || '3'),
-  RETRY_BASE_DELAY_MS: parseInt(process.env.RETRY_BASE_DELAY_MS || '1000'),
-  CIRCUIT_BREAKER_THRESHOLD: parseInt(process.env.CIRCUIT_BREAKER_THRESHOLD || '5'),
-  CIRCUIT_BREAKER_TIMEOUT_MS: parseInt(process.env.CIRCUIT_BREAKER_TIMEOUT_MS || '30000'),
-  
+  SHARED_SECRET: process.env['SHARED_SECRET'] ?? 'dev-secret-key-change-in-production',
+  TIMESTAMP_MAX_AGE_SEC: parseInt(process.env['TIMESTAMP_MAX_AGE_SEC'] ?? '300'),
+
+  // Storage
+  DATABASE_PATH: process.env['DATABASE_PATH'] ?? './data/transactions.db',
+
   // External API
-  EXTERNAL_API_URL: process.env.EXTERNAL_API_URL || 'http://localhost:4000'
+  EXTERNAL_API_URL: process.env['EXTERNAL_API_URL'] ?? 'http://localhost:4000',
+  EXTERNAL_API_TIMEOUT_MS: parseInt(process.env['EXTERNAL_API_TIMEOUT_MS'] ?? '5000'),
+
+  // Resilience
+  RETRY_MAX_ATTEMPTS: parseInt(process.env['RETRY_MAX_ATTEMPTS'] ?? '3'),
+  RETRY_BASE_DELAY_MS: parseInt(process.env['RETRY_BASE_DELAY_MS'] ?? '1000'),
+  CIRCUIT_BREAKER_THRESHOLD: parseInt(process.env['CIRCUIT_BREAKER_THRESHOLD'] ?? '5'),
+  CIRCUIT_BREAKER_TIMEOUT_MS: parseInt(process.env['CIRCUIT_BREAKER_TIMEOUT_MS'] ?? '30000'),
+  BULKHEAD_MAX_CONCURRENT: parseInt(process.env['BULKHEAD_MAX_CONCURRENT'] ?? '10'),
 };
 
 export const isProduction = config.NODE_ENV === 'production';
@@ -586,8 +590,8 @@ export class Bulkhead {
 ### 6.1 src/services/transactionService.ts
 
 ```typescript
-import { Transaction, AuthorizeRequest, VoidRequest } from '../types';
-import { transactionStore } from '../storage/transactionStore';
+import { Transaction, AuthorizeRequest } from '../types';
+import { transactionStore } from '../storage/SqliteTransactionStore';
 import { logger } from '../logger';
 
 export class TransactionService {
@@ -706,24 +710,24 @@ export class ResilienceService {
     config.CIRCUIT_BREAKER_TIMEOUT_MS   // 30s em OPEN → tenta HALF_OPEN
   );
 
-  async callAuthorizeWithProtection(nsu: string, amount: number, terminalId: string, correlationId: string) {
-    return this.callWithProtection(
+  async callAuthorize(nsu: string, amount: number, terminalId: string, correlationId: string) {
+    return this.protect(
       () => externalApiService.authorize(nsu, amount, terminalId, correlationId),
       'authorize',
       correlationId
     );
   }
 
-  async callConfirmWithProtection(transactionId: string, correlationId: string) {
-    return this.callWithProtection(
+  async callConfirm(transactionId: string, correlationId: string) {
+    return this.protect(
       () => externalApiService.confirm(transactionId, correlationId),
       'confirm',
       correlationId
     );
   }
 
-  async callVoidWithProtection(transactionId: string, correlationId: string) {
-    return this.callWithProtection(
+  async callVoid(transactionId: string, correlationId: string) {
+    return this.protect(
       () => externalApiService.void(transactionId, correlationId),
       'void',
       correlationId
@@ -731,7 +735,7 @@ export class ResilienceService {
   }
 
   // Cadeia: Bulkhead → CircuitBreaker → Retry → Timeout
-  private async callWithProtection(fn: () => Promise<any>, operation: string, correlationId: string) {
+  private async protect(fn: () => Promise<any>, operation: string, correlationId: string) {
     try {
       return await this.bulkhead.call(async () => {
         return await this.circuitBreaker.call(async () => {
@@ -787,7 +791,7 @@ router.post('/authorize', async (req: SecureRequest, res: Response) => {
     
     // Chamar API externa (com proteção)
     try {
-      await resilienceService.callAuthorizeWithProtection(nsu, amount, terminalId, req.correlationId);
+      await resilienceService.callAuthorize(nsu, amount, terminalId, req.correlationId);
     } catch (err) {
       logger.error('Failed to call external API during authorize', {
         correlationId: req.correlationId,
@@ -838,7 +842,7 @@ router.post('/confirm', async (req: SecureRequest, res: Response) => {
     
     // Chamar API externa
     try {
-      await resilienceService.callConfirmWithProtection(transactionId, req.correlationId);
+      await resilienceService.callConfirm(transactionId, req.correlationId);
     } catch (err) {
       logger.error('Failed to call external API during confirm', {
         correlationId: req.correlationId,
@@ -894,7 +898,7 @@ router.post('/void', async (req: SecureRequest, res: Response) => {
     
     // Chamar API externa
     try {
-      await resilienceService.callVoidWithProtection(txId, req.correlationId);
+      await resilienceService.callVoid(txId, req.correlationId);
     } catch (err) {
       logger.error('Failed to call external API during void', {
         correlationId: req.correlationId,
@@ -934,47 +938,52 @@ export default router;
 ### 8.1 src/app.ts
 
 ```typescript
-import express from 'express';
-import cors from 'cors';
-import { SecureRequest, signatureMiddleware, timestampMiddleware } from './middleware/security';
-import { correlationIdMiddleware } from './middleware/correlation';
+import * as express from 'express';
+import cors = require('cors');
+import { correlationMiddleware } from './middleware/correlation';
+import { validateSignature, validateTimestamp } from './middleware/security';
+import { errorHandler } from './middleware/errorHandler';
 import transactionRoutes from './routes/transactions';
 
-const app = express();
+// Factory — returns a configured Express app instance.
+// Using a factory (not a singleton) lets tests create isolated instances.
+export function createApp(): express.Express {
+  const app = express();
 
-// Capturar body como string (para HMAC)
-app.use(express.raw({ type: 'application/json' }));
-app.use((req: SecureRequest, res, next) => {
-  req.rawBody = req.body ? req.body.toString() : '';
-  req.body = req.body ? JSON.parse(req.rawBody) : {};
-  next();
-});
-
-app.use(cors());
-
-// Middleware de segurança
-app.use(correlationIdMiddleware);
-app.use(signatureMiddleware);
-app.use(timestampMiddleware);
-
-// Rotas
-app.use('/v1/pos/transactions', transactionRoutes);
-
-// Health check
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
-
-// Error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    error: 'internal_error',
-    message: err.message
+  // Capture raw body bytes for HMAC validation (must precede JSON parsing)
+  app.use(express.raw({ type: 'application/json' }));
+  app.use((req: express.Request, _res: express.Response, next: express.NextFunction): void => {
+    const raw = req.body;
+    if (raw instanceof Buffer) {
+      req.rawBody = raw.length > 0 ? raw.toString('utf8') : '';
+      req.body = req.rawBody ? JSON.parse(req.rawBody) : {};
+    } else {
+      req.rawBody = '';
+      if (req.body === undefined) req.body = {};
+    }
+    next();
   });
-});
 
-export default app;
+  app.use(cors());
+
+  // Security middleware (correlation ID first so rejections carry a correlationId)
+  app.use(correlationMiddleware);
+  app.use(validateSignature);
+  app.use(validateTimestamp);
+
+  // Business routes
+  app.use('/v1/pos/transactions', transactionRoutes);
+
+  // Health check — no security headers required
+  app.get('/health', (_req: express.Request, res: express.Response): void => {
+    res.status(200).json({ status: 'ok' });
+  });
+
+  // Global error handler — must be last
+  app.use(errorHandler);
+
+  return app;
+}
 ```
 
 ### 8.2 src/index.ts

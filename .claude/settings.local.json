@@ -3,7 +3,15 @@
     "allow": [
       "Bash(mkdir -p docs .claude/commands)",
       "Bash(git mv:*)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(node -e ' *)",
+      "Bash(npx ts-node --transpile-only -e ' *)",
+      "Bash(npx ts-node *)",
+      "Bash(node -e \"console.log\\(process.version\\)\")",
+      "Bash(curl -s http://localhost:3000/health)",
+      "Bash(python -m json.tool)",
+      "Bash(pkill -f \"ts-node src/index.ts\")",
+      "Bash(DATABASE_PATH=./data/test-e2e.db npx ts-node src/index.ts)"
     ]
   }
 }
