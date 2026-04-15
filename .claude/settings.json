@@ -6,7 +6,10 @@
       "Bash(git mv *)",
       "Bash(git status)",
       "Bash(git log *)",
-      "Bash(tsc *)"
+      "Bash(tsc *)",
+      "Bash(npx tsc *)",
+      "Bash(npx ts-node *)",
+      "Bash(npx jest *)"
     ]
   },
   "hooks": {
