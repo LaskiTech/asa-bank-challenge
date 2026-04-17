@@ -20,6 +20,11 @@ export const config = {
   CIRCUIT_BREAKER_THRESHOLD: parseInt(process.env['CIRCUIT_BREAKER_THRESHOLD'] ?? '5'),
   CIRCUIT_BREAKER_TIMEOUT_MS: parseInt(process.env['CIRCUIT_BREAKER_TIMEOUT_MS'] ?? '30000'),
   BULKHEAD_MAX_CONCURRENT: parseInt(process.env['BULKHEAD_MAX_CONCURRENT'] ?? '10'),
+
+  // Observability (OpenTelemetry)
+  // Unset → ConsoleSpanExporter (stdout).  Set → OTLP exporter (e.g. Jaeger).
+  OTEL_SERVICE_NAME: process.env['OTEL_SERVICE_NAME'] ?? 'pos-transaction-api',
+  OTEL_EXPORTER_OTLP_ENDPOINT: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'] ?? '',
 };
 
 export const isProduction = config.NODE_ENV === 'production';
