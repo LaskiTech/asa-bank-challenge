@@ -1,3 +1,4 @@
+import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { Bulkhead } from '../resilience/bulkhead';
 import { CircuitBreaker } from '../resilience/circuitBreaker';
 import { retryWithBackoff } from '../resilience/retryPolicy';
@@ -5,6 +6,8 @@ import { withTimeout } from '../resilience/timeout';
 import { ExternalApiService, ExternalApiResult, externalApiService } from './externalApiService';
 import { config } from '../config';
 import { logger } from '../logger';
+
+const tracer = trace.getTracer('resilience-service', '1.0.0');
 
 // ---------------------------------------------------------------------------
 // Service
@@ -91,15 +94,26 @@ export class ResilienceService {
   /**
    * Bulkhead → CircuitBreaker → retryWithBackoff → withTimeout → fn
    *
-   * Every layer receives `correlationId` so structured log lines are traceable.
+   * Wrapped in an OpenTelemetry span so every external API call is visible
+   * as a trace in Jaeger / any OTLP backend.  The span carries:
+   *   - correlation.id  → ties the trace to the structured log lines
+   *   - resilience.*    → circuit-breaker state and operation name
    */
   private async protect(
     fn: () => Promise<ExternalApiResult>,
     operation: string,
     correlationId: string,
   ): Promise<ExternalApiResult> {
+    const span = tracer.startSpan(`external-api.${operation}`);
+    span.setAttributes({
+      'correlation.id': correlationId,
+      'resilience.operation': operation,
+      'resilience.cb_state': this.circuitBreaker.getState(),
+      'resilience.bulkhead_active': this.bulkhead.stats.active,
+    });
+
     try {
-      return await this.bulkhead.call(
+      const result = await this.bulkhead.call(
         () =>
           this.circuitBreaker.call(
             () =>
@@ -114,7 +128,14 @@ export class ResilienceService {
           ),
         correlationId,
       );
+      span.setStatus({ code: SpanStatusCode.OK });
+      return result;
     } catch (err) {
+      span.recordException(err as Error);
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: err instanceof Error ? err.message : String(err),
+      });
       logger.error('External API call failed after full protection chain', {
         correlationId,
         operation,
@@ -123,6 +144,8 @@ export class ResilienceService {
         bulkhead: this.bulkhead.stats,
       });
       throw err;
+    } finally {
+      span.end();
     }
   }
 }

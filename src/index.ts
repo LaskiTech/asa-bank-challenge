@@ -5,6 +5,10 @@
 // config.ts is evaluated.
 import 'dotenv/config';
 
+// OpenTelemetry must be initialised before Express and http are required so
+// that the auto-instrumentations can patch them at load time.
+import './telemetry';
+
 import { createApp } from './app';
 import { config } from './config';
 import { logger } from './logger';

@@ -1,10 +1,32 @@
 services:
+  # Jaeger all-in-one — opcional, ativo apenas com: docker compose --profile observability up
+  # UI disponível em http://localhost:16686
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    profiles: ["observability"]
+    ports:
+      - "16686:16686"   # UI
+      - "4318:4318"     # OTLP HTTP receiver
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+
+  mock-api:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./mock-api:/app
+    command: node server.js
+    ports:
+      - "4000:4000"
+
   api:
     build:
       context: .
       target: development          # switch to "production" for prod builds
     ports:
       - "3000:3000"
+    depends_on:
+      - mock-api
     volumes:
       # Persist SQLite database between container restarts.
       # The SqliteTransactionStore constructor auto-creates this directory.
@@ -15,11 +37,14 @@ services:
       SHARED_SECRET: ${SHARED_SECRET:-dev-secret-key-change-in-production}
       TIMESTAMP_MAX_AGE_SEC: ${TIMESTAMP_MAX_AGE_SEC:-300}
       DATABASE_PATH: /app/data/transactions.db
-      EXTERNAL_API_URL: ${EXTERNAL_API_URL:-http://localhost:4000}
+      EXTERNAL_API_URL: ${EXTERNAL_API_URL:-http://mock-api:4000}
       EXTERNAL_API_TIMEOUT_MS: ${EXTERNAL_API_TIMEOUT_MS:-5000}
       RETRY_MAX_ATTEMPTS: ${RETRY_MAX_ATTEMPTS:-3}
       RETRY_BASE_DELAY_MS: ${RETRY_BASE_DELAY_MS:-1000}
       CIRCUIT_BREAKER_THRESHOLD: ${CIRCUIT_BREAKER_THRESHOLD:-5}
       CIRCUIT_BREAKER_TIMEOUT_MS: ${CIRCUIT_BREAKER_TIMEOUT_MS:-30000}
       BULKHEAD_MAX_CONCURRENT: ${BULKHEAD_MAX_CONCURRENT:-10}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-pos-transaction-api}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
     restart: unless-stopped
