@@ -1,4 +1,4 @@
-import { Bulkhead, BulkheadError } from './bulkhead';
+import { Bulkhead, BulkheadError } from '../../resilience/bulkhead';
 
 describe('Bulkhead — caminho feliz', () => {
   it('executa a função e retorna o resultado', async () => {

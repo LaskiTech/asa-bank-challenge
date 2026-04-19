@@ -4,8 +4,8 @@ import { CircuitBreaker } from '../resilience/circuitBreaker';
 import { retryWithBackoff } from '../resilience/retryPolicy';
 import { withTimeout } from '../resilience/timeout';
 import { ExternalApiService, ExternalApiResult, externalApiService } from './externalApiService';
-import { config } from '../config';
-import { logger } from '../logger';
+import { config } from '../core/config';
+import { logger } from '../core/logger';
 
 const tracer = trace.getTracer('resilience-service', '1.0.0');
 

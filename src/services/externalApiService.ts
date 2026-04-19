@@ -1,5 +1,5 @@
-import { config } from '../config';
-import { logger } from '../logger';
+import { config } from '../core/config';
+import { logger } from '../core/logger';
 
 // ---------------------------------------------------------------------------
 // Response shape returned by the external authorization API

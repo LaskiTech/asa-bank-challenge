@@ -4,7 +4,7 @@ const http = require('http');
 // Toggle via: POST /admin/mode  { "mode": "fail" }
 let mode = 'ok';
 
-const SLOW_DELAY_MS = 6000; // longer than the 5s timeout → triggers TimeoutError
+const SLOW_DELAY_MS = 100; // longer than the 5s timeout → triggers TimeoutError
 
 const responses = {
   '/authorize': { success: true, message: 'authorized' },

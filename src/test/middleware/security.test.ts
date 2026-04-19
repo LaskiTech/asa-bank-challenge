@@ -1,6 +1,6 @@
 import { createHmac } from 'crypto';
 import type { Request, Response, NextFunction } from 'express';
-import { validateSignature, validateTimestamp } from './security';
+import { validateSignature, validateTimestamp } from '../../middleware/security';
 
 // Use the same secret that setup.ts injects into process.env
 const SECRET = 'test-secret';

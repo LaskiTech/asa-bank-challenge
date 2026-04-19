@@ -7,11 +7,11 @@ import 'dotenv/config';
 
 // OpenTelemetry must be initialised before Express and http are required so
 // that the auto-instrumentations can patch them at load time.
-import './telemetry';
+import './core/telemetry';
 
 import { createApp } from './app';
-import { config } from './config';
-import { logger } from './logger';
+import { config } from './core/config';
+import { logger } from './core/logger';
 
 // ---------------------------------------------------------------------------
 // Start server

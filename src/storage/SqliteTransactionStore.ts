@@ -2,9 +2,9 @@ import * as Database from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { config } from '../config';
-import { logger } from '../logger';
-import { Transaction, TransactionState } from '../types';
+import { config } from '../core/config';
+import { logger } from '../core/logger';
+import { Transaction, TransactionState } from '../core/types';
 import { ITransactionStore } from './ITransactionStore';
 
 // Row shape returned by better-sqlite3 for the transactions table

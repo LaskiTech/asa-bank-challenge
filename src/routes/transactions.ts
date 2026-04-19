@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { AuthorizeRequest, ConfirmRequest, VoidRequest } from '../types';
+import { AuthorizeRequest, ConfirmRequest, VoidRequest } from '../core/types';
 import { transactionService } from '../services/transactionService';
 import { resilienceService } from '../services/resilienceService';
-import { logger } from '../logger';
+import { logger } from '../core/logger';
 
 const router = Router();
 

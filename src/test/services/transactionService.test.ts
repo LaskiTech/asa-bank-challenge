@@ -1,5 +1,5 @@
-import { SqliteTransactionStore } from '../storage/SqliteTransactionStore';
-import { TransactionService } from './transactionService';
+import { SqliteTransactionStore } from '../../storage/SqliteTransactionStore';
+import { TransactionService } from '../../services/transactionService';
 
 // Each test suite gets its own isolated in-memory SQLite database
 function makeService() {

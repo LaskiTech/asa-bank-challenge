@@ -1,4 +1,4 @@
-import { retryWithBackoff } from './retryPolicy';
+import { retryWithBackoff } from '../../resilience/retryPolicy';
 
 const err = (statusCode: number, message = 'error') =>
   Object.assign(new Error(message), { statusCode });

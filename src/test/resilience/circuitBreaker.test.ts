@@ -1,4 +1,4 @@
-import { CircuitBreaker, CircuitBreakerOpenError } from './circuitBreaker';
+import { CircuitBreaker, CircuitBreakerOpenError } from '../../resilience/circuitBreaker';
 
 const fail500 = () => Promise.reject(Object.assign(new Error('upstream error'), { statusCode: 500 }));
 const succeed = () => Promise.resolve('ok');

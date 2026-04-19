@@ -1,5 +1,19 @@
 # API de Transações POS
 
+## Pré-requisitos
+
+| Requisito | Versão mínima | Observação |
+|---|---|---|
+| **Node.js** | 20 LTS | Runtime da aplicação |
+| **npm** | 10+ | Gerenciador de pacotes (vem com o Node) |
+| **TypeScript** | 5+ | Instalado via `npm install` (devDependency) |
+| **Docker** | 24+ | Necessário apenas para rodar via Docker Compose |
+| **Docker Compose** | 2.x (`compose` plugin) | Orquestra a API + mock juntos |
+
+> Para rodar localmente sem Docker, basta Node.js + npm. O banco SQLite é criado automaticamente em `./data/transactions.db`.
+
+---
+
 Middleware orquestrador para transações de terminais POS. Recebe requisições dos terminais, valida a segurança, garante idempotência, aplica uma cadeia de resiliência e repassa para uma API externa de autorização.
 
 ```
@@ -327,16 +341,3 @@ O projeto emite logs estruturados em JSON com `correlationId`, `level`, `timesta
 | `PascalCase` | Arquivos de classes concretas | `SqliteTransactionStore.ts` |
 | `snake_case` | Error codes nas respostas HTTP | `circuit_breaker_open`, `bulkhead_full` |
 
----
-
-## Documentação de referência
-
-| Arquivo | Conteúdo |
-|---|---|
-| `docs/ARQUITETURA.md` | Fluxos, modelo de dados, decisões de design |
-| `docs/API_SPEC.md` | Contratos completos de request/response |
-| `docs/SEGURANCA.md` | HMAC, timestamp, middleware de segurança |
-| `docs/RESILIENCIA.md` | Timeout, retry, circuit breaker, bulkhead |
-| `docs/IMPLEMENTACAO.md` | Guia de implementação fase a fase |
-| `docs/DOCKER.md` | Configuração Docker e persistência do SQLite |
-| `docs/postman_collection.json` | Collection Postman com exemplos prontos |
