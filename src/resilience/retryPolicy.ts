@@ -1,4 +1,4 @@
-import { logger } from '../logger';
+import { logger } from '../core/logger';
 
 /**
  * Determines whether an error warrants a retry.

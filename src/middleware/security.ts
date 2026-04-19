@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { config } from '../config';
-import { logger } from '../logger';
+import { config } from '../core/config';
+import { logger } from '../core/logger';
 
 // Global augmentation — rawBody is set by the body-capture middleware in app.ts
 // before validateSignature runs.

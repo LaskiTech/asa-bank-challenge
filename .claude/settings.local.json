@@ -11,7 +11,10 @@
       "Bash(curl -s http://localhost:3000/health)",
       "Bash(python -m json.tool)",
       "Bash(pkill -f \"ts-node src/index.ts\")",
-      "Bash(DATABASE_PATH=./data/test-e2e.db npx ts-node src/index.ts)"
+      "Bash(DATABASE_PATH=./data/test-e2e.db npx ts-node src/index.ts)",
+      "Bash(sed -i \"s|from './config'|from './core/config'|g; s|from './logger'|from './core/logger'|g; s|import './telemetry'|import './core/telemetry'|g\" src/index.ts)",
+      "Bash(sed -i \"s|from './logger'|from './core/logger'|g\" src/app.ts)",
+      "Bash(sed -i 's|from '\\\\''../config'\\\\''|from '\\\\''../core/config'\\\\''|g; s|from '\\\\''../logger'\\\\''|from '\\\\''../core/logger'\\\\''|g; s|from '\\\\''../types'\\\\''|from '\\\\''../core/types'\\\\''|g' src/middleware/security.ts src/middleware/errorHandler.ts src/services/externalApiService.ts src/services/resilienceService.ts src/services/transactionService.ts src/storage/ITransactionStore.ts src/storage/SqliteTransactionStore.ts src/routes/transactions.ts src/resilience/bulkhead.ts src/resilience/circuitBreaker.ts src/resilience/retryPolicy.ts)"
     ]
   }
 }

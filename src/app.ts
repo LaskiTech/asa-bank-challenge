@@ -5,7 +5,7 @@ import { validateSignature, validateTimestamp } from './middleware/security';
 import { errorHandler } from './middleware/errorHandler';
 import transactionRoutes from './routes/transactions';
 import { resilienceService } from './services/resilienceService';
-import { logger } from './logger';
+import { logger } from './core/logger';
 
 // ---------------------------------------------------------------------------
 // Factory — returns a configured Express application.

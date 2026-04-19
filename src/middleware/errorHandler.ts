@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '../logger';
+import { logger } from '../core/logger';
 
 // ---------------------------------------------------------------------------
 // Global Express error handler

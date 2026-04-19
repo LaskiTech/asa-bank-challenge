@@ -1,7 +1,7 @@
-import { Transaction, AuthorizeRequest, TransactionState } from '../types';
+import { Transaction, AuthorizeRequest, TransactionState } from '../core/types';
 import { ITransactionStore } from '../storage/ITransactionStore';
 import { transactionStore } from '../storage/SqliteTransactionStore';
-import { logger } from '../logger';
+import { logger } from '../core/logger';
 
 // ---------------------------------------------------------------------------
 // Helpers

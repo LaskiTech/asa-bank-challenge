@@ -1,4 +1,4 @@
-import { Transaction, TransactionState } from '../types';
+import { Transaction, TransactionState } from '../core/types';
 
 /**
  * Storage abstraction for transactions.

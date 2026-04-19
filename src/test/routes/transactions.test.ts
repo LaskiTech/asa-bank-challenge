@@ -8,11 +8,11 @@
 import supertest = require('supertest');
 const request = supertest;
 import { createHmac } from 'crypto';
-import { createApp } from '../app';
+import { createApp } from '../../app';
 import type { Express } from 'express';
 
 // Mock the external API service before any module is loaded
-jest.mock('../services/externalApiService', () => ({
+jest.mock('../../services/externalApiService', () => ({
   externalApiService: {
     authorize: jest.fn().mockResolvedValue({ success: true, message: 'authorized' }),
     confirm: jest.fn().mockResolvedValue({ success: true, message: 'confirmed' }),
